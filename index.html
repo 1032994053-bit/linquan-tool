@@ -3,47 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>行业统计复盘工具 v4.1</title>
+    <title>行业统计复盘工具</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #1677ff; --success: #52c41a; --danger: #ff4d4f; --bg: #f5f7fa; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, "PingFang SC", sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; }
-        
         .container { max-width: 1000px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        
-        /* 上传区 */
         .drop-area { border: 2px dashed var(--primary); background: #f0f7ff; padding: 25px 15px; text-align: center; border-radius: 10px; cursor: pointer; color: var(--primary); }
-        
-        /* 历史管理栏 */
         .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
         .history-label { font-size: 13px; color: #888; font-weight: bold; }
         .clear-link { color: var(--danger); font-size: 13px; text-decoration: none; cursor: pointer; }
-
-        /* 历史标签栏 */
         .history-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; }
         .history-tabs::-webkit-scrollbar { display: none; }
         .tab { background: #e8e8e8; padding: 6px 14px; border-radius: 18px; cursor: pointer; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
         .tab.active { background: var(--primary); color: white; }
-
-        /* 表格样式 */
         .table-wrapper { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 450px; }
         th { background: #fafafa; padding: 10px 8px; text-align: left; border-bottom: 2px solid #f0f0f0; font-size: 13px; color: #666; }
         td { padding: 12px 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-        
         .badge { background: var(--primary); color: white; padding: 1px 6px; border-radius: 8px; font-size: 11px; }
         .top-tag { color: #d93025; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
         .new-label { color: #f5222d; font-size: 10px; font-weight: bold; border: 1px solid #f5222d; padding: 0 2px; border-radius: 3px; margin-left: 3px; }
-
-        /* 明细样式 */
         .detail-row { display: none; background: #fafafa; }
         .detail-box { padding: 10px 5px 15px 15px; border-left: 3px solid var(--primary); }
         .detail-inner-table { width: 100%; font-size: 12px; background: white; border: 1px solid #eee; }
-
-        /* 底部操作 */
         .btn-save { background: var(--success); color: white; border: none; padding: 12px; border-radius: 25px; cursor: pointer; font-weight: bold; width: 100%; margin: 15px 0; box-shadow: 0 4px 10px rgba(82,196,26,0.3); font-size: 15px; }
         .compare-bar { background: #fffbe6; border: 1px solid #ffe58f; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
     </style>
@@ -55,12 +41,12 @@
         <h2 style="text-align:center; margin: 5px 0 15px 0; font-size: 20px;">📊 调研数据复盘助手</h2>
         <div class="drop-area" id="drop-zone">
             <b>📁 点击选择或拖入文件</b>
-            <p style="font-size: 11px; color: #888; margin-top:5px;">自动对比上一份分析结果</p>
+            <p style="font-size: 11px; color: #888; margin-top:5px;">已优化：优先显示个股名称</p>
         </div>
     </div>
 
     <div class="history-header">
-        <span class="history-label">🕒 最近记录 (最多5条)</span>
+        <span class="history-label">🕒 最近记录</span>
         <span class="clear-link" onclick="clearAllData()">🗑️ 清空记录</span>
     </div>
     <div class="history-tabs" id="history-tabs"></div>
@@ -68,10 +54,7 @@
     <div id="capture-area">
         <div id="compare-info" class="compare-bar" style="display:none;"></div>
         <div class="card" id="table-card" style="display:none;">
-            <div style="margin-bottom: 12px;">
-                <h4 id="current-title" style="margin:0; color:var(--primary); font-size: 14px; word-break: break-all;"></h4>
-            </div>
-            
+            <h4 id="current-title" style="margin:0 0 12px 0; color:var(--primary); font-size: 14px;"></h4>
             <div class="table-wrapper">
                 <table id="main-table">
                     <thead>
@@ -89,7 +72,7 @@
         </div>
     </div>
     
-    <button id="save-btn" class="btn-save" style="display:none" onclick="saveImg()">📸 生成分析长图 (发朋友圈/群)</button>
+    <button id="save-btn" class="btn-save" style="display:none" onclick="saveImg()">📸 生成分析长图</button>
 </div>
 
 <script>
@@ -100,12 +83,10 @@ window.onload = () => {
     if(historyData.length > 0) renderResult(0);
 };
 
-// 文件处理逻辑
 const dz = document.getElementById('drop-zone');
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
 fileInput.accept = ".csv, .xlsx, .xls";
-
 dz.onclick = () => fileInput.click();
 fileInput.onchange = e => handleFile(e.target.files[0]);
 
@@ -117,34 +98,40 @@ function handleFile(file) {
             const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
             const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
             processAndSave(file.name, data);
-        } catch(err) { alert("文件读取失败，请检查格式"); }
+        } catch(err) { alert("读取失败，请检查格式"); }
     };
     reader.readAsArrayBuffer(file);
 }
 
 function processAndSave(filename, data) {
+    if (!data || data.length === 0) return;
     const stats = {};
     const keys = Object.keys(data[0]);
+    
+    // 重点优化：匹配简称或名称，排除掉纯数字的代码列
     const colInd = keys.find(k => k.includes('行业'));
-    const colName = keys.find(k => k.includes('简称')) || keys.find(k => k.includes('名称'));
-    const colNum = keys.find(k => k.includes('调研机构家数') && k.includes('(家)')) || 
-                   keys.find(k => k.includes('调研机构家数') && !k.includes('排名'));
+    const colName = keys.find(k => k.includes('简称')) || keys.find(k => k.includes('名称')) || keys.find(k => k.includes('股票') && !k.includes('代码'));
+    const colNum = keys.find(k => (k.includes('家数') || k.includes('调研数')) && !k.includes('排名'));
 
     data.forEach(item => {
-        let l1 = (item[colInd] || "未知").toString().split('-')[0].trim();
+        if (!item[colInd] && !item[colName]) return;
+        let l1 = (item[colInd] || "其他").toString().split('-')[0].trim();
         let name = item[colName] || "未知";
         let num = parseInt(item[colNum]) || 0;
+
+        if (num === 0 && (!item[colInd] || item[colInd] === "")) return;
         if(!stats[l1]) stats[l1] = { count: 0, top: name, max: num, stocks: [] };
         stats[l1].count++;
-        stats[l1].stocks.push({ name, full: item[colInd], num });
+        stats[l1].stocks.push({ name, full: (item[colInd] || "未知"), num });
         if(num > stats[l1].max) { stats[l1].max = num; stats[l1].top = name; }
     });
 
+    const sortedData = Object.entries(stats).filter(([n, i]) => i.count > 0 && n !== "undefined").sort((a,b) => b[1].count - a[1].count);
     const result = {
         id: Date.now(),
-        time: new Date().toLocaleString('zh-CN', {hour12:false}).slice(5,-3).replace('/','-'),
+        time: new Date().toLocaleString('zh-CN', {hour12:false}).slice(5,-3).replace(/\//g,'-'),
         filename: filename,
-        data: Object.entries(stats).sort((a,b) => b[1].count - a[1].count)
+        data: sortedData
     };
 
     historyData.unshift(result);
@@ -157,27 +144,18 @@ function processAndSave(filename, data) {
 function refreshTabs() {
     const container = document.getElementById('history-tabs');
     if(historyData.length === 0) {
-        container.innerHTML = '<span style="color:#bbb; font-size:12px; padding:10px;">暂无历史记录</span>';
+        container.innerHTML = '<span style="color:#bbb; font-size:12px; padding:10px;">暂无记录</span>';
         return;
     }
-    container.innerHTML = historyData.map((item, i) => `
-        <div class="tab ${i===0?'active':''}" onclick="renderResult(${i}, this)">
-            ${item.time} | ${item.filename.substring(0,6)}
-        </div>
-    `).join('');
+    container.innerHTML = historyData.map((item, i) => `<div class="tab ${i===0?'active':''}" onclick="renderResult(${i}, this)">${item.time} | ${item.filename.substring(0,8)}</div>`).join('');
 }
 
 function renderResult(index, tabEl) {
     const res = historyData[index];
     const prev = historyData[index + 1];
     if(!res) return;
+    if(tabEl) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tabEl.classList.add('active'); }
 
-    if(tabEl) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tabEl.classList.add('active');
-    }
-
-    // 对比前五
     const currentTop5 = res.data.slice(0, 5).map(x => x[0]);
     const prevTop5 = prev ? prev.data.slice(0, 5).map(x => x[0]) : [];
     const newInTop5 = currentTop5.filter(x => !prevTop5.includes(x));
@@ -196,75 +174,38 @@ function renderResult(index, tabEl) {
         const isNew = (i < 5 && newInTop5.includes(name));
         const rowId = `detail-${index}-${i}`;
         const mainRow = document.createElement('tr');
-        mainRow.className = 'industry-row';
-        mainRow.onclick = () => {
-            const d = document.getElementById(rowId);
-            d.style.display = d.style.display === 'table-row' ? 'none' : 'table-row';
-        };
-        mainRow.innerHTML = `
-            <td style="color:#ccc; font-size:10px;">▶</td>
-            <td>${i+1}</td>
-            <td style="font-weight:bold">${name}${isNew?'<span class="new-label">新晋</span>':''}</td>
-            <td><span class="badge">${info.count}股</span></td>
-            <td><span class="top-tag">${info.top}</span><br><small style="color:#999">${info.max}家</small></td>
-        `;
+        mainRow.onclick = () => { const d = document.getElementById(rowId); d.style.display = d.style.display === 'table-row' ? 'none' : 'table-row'; };
+        mainRow.innerHTML = `<td>▶</td><td>${i+1}</td><td style="font-weight:bold">${name}${isNew?'<span class="new-label">新晋</span>':''}</td><td><span class="badge">${info.count}股</span></td><td><span class="top-tag">${info.top}</span><br><small style="color:#999">${info.max}家</small></td>`;
         tbody.appendChild(mainRow);
-
         const detailRow = document.createElement('tr');
         detailRow.id = rowId;
         detailRow.className = 'detail-row';
-        detailRow.innerHTML = `
-            <td colspan="5">
-                <div class="detail-box">
-                    <table class="detail-inner-table">
-                        <thead><tr><th>股票简称</th><th>调研数</th></tr></thead>
-                        <tbody>
-                            ${info.stocks.sort((a,b)=>b.num-a.num).map(s=>`
-                                <tr><td><b>${s.name}</b><br><span style="color:#999;font-size:10px">${s.full}</span></td><td>${s.num}家</td></tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </td>
-        `;
+        detailRow.innerHTML = `<td colspan="5"><div class="detail-box"><table class="detail-inner-table"><thead><tr><th>股票简称</th><th>调研数</th></tr></thead><tbody>${info.stocks.sort((a,b)=>b.num-a.num).map(s=>`<tr><td><b>${s.name}</b><br><span style="color:#999;font-size:10px">${s.full}</span></td><td>${s.num}家</td></tr>`).join('')}</tbody></table></div></td>`;
         tbody.appendChild(detailRow);
     });
-
     document.getElementById('table-card').style.display = 'block';
     document.getElementById('save-btn').style.display = 'block';
 }
 
-// 清空功能
 function clearAllData() {
-    if(historyData.length === 0) return;
-    if(confirm("确定要永久清空所有分析记录吗？清空后无法找回。")) {
+    if(confirm("确定清空吗？")) {
         localStorage.removeItem('trade_stats_history');
         historyData = [];
         document.getElementById('table-card').style.display = 'none';
         document.getElementById('save-btn').style.display = 'none';
-        document.getElementById('compare-info').style.display = 'none';
         refreshTabs();
-        alert("已清空");
     }
 }
 
-// 保存图片
 function saveImg() {
     const btn = document.getElementById('save-btn');
-    const oldText = btn.innerText;
     btn.innerText = "⚡ 正在生成图片...";
-    
-    html2canvas(document.getElementById('capture-area'), {
-        scale: 2, 
-        backgroundColor: "#f5f7fa",
-        useCORS: true
-    }).then(c => {
+    html2canvas(document.getElementById('capture-area'), { scale: 2, backgroundColor: "#f5f7fa", useCORS: true }).then(c => {
         const a = document.createElement('a');
         a.href = c.toDataURL('image/png');
-        a.download = `行业分析_${new Date().getTime()}.png`;
+        a.download = `分析_${new Date().getTime()}.png`;
         a.click();
-        btn.innerText = oldText;
-        setTimeout(() => alert("长图已生成！请在下载管理中查看，或长按图片保存。"), 500);
+        btn.innerText = "📸 生成分析长图";
     });
 }
 </script>
