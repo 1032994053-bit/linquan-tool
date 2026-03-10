@@ -3,90 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>行业统计工具</title>
+    <title>行业统计复盘工具</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --primary: #1677ff; --success: #52c41a; --danger: #ff4d4f; --bg: #f5f7fa; }
+        :root { --primary: #1677ff; --success: #52c41a; --danger: #ff4d4f; --bg: #f0f2f5; --text-main: #1a1a1a; --text-sub: #434343; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, "PingFang SC", sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .drop-area { border: 2px dashed var(--primary); background: #f0f7ff; padding: 25px 15px; text-align: center; border-radius: 10px; cursor: pointer; color: var(--primary); }
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
-        .history-label { font-size: 13px; color: #888; font-weight: bold; }
-        .clear-link { color: var(--danger); font-size: 13px; text-decoration: none; cursor: pointer; }
-        .history-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; }
-        .history-tabs::-webkit-scrollbar { display: none; }
-        .tab { background: #e8e8e8; padding: 6px 14px; border-radius: 18px; cursor: pointer; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+        body { font-family: -apple-system, "PingFang SC", sans-serif; background: var(--bg); margin: 0; padding: 15px 10px; color: var(--text-main); display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 12px; }
+        .drop-area { border: 2px dashed #d9d9d9; background: #fafafa; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; color: var(--primary); }
+        
+        .history-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+        .history-tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+        .tab { background: #e8e8e8; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
         .tab.active { background: var(--primary); color: white; }
-        .table-wrapper { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 450px; }
-        th { background: #fafafa; padding: 10px 8px; text-align: left; border-bottom: 2px solid #f0f0f0; font-size: 13px; color: #666; }
-        td { padding: 12px 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-        .badge { background: var(--primary); color: white; padding: 1px 6px; border-radius: 8px; font-size: 11px; }
-        .top-tag { color: #d93025; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-        .new-label { color: #f5222d; font-size: 10px; font-weight: bold; border: 1px solid #f5222d; padding: 0 2px; border-radius: 3px; margin-left: 3px; }
+        .btn-clear { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffccc7; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+
+        /* 一级主表：Padding 10px */
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        #main-table td { padding: 10px 4px; border-bottom: 1px solid #f0f0f0; line-height: 1.3; }
+        #main-table th { padding: 8px 4px; color: #888; font-size: 13px; font-weight: normal; border-bottom: 2px solid #f0f0f0; }
+        
+        .col-icon { width: 22px; text-align: center; color: var(--primary); font-size: 10px; }
+        .col-rank { width: 30px; text-align: center; color: #999; font-weight: bold; }
+        .col-industry-name { width: auto; font-weight: bold; font-size: 15px; color: #000; }
+        .col-stock-count { width: 55px; text-align: center; }
+        .col-top-stock { width: 95px; text-align: right; }
+
+        .hot-up { color: #f5222d; font-size: 10px; font-weight: bold; margin-left: 4px; background: #fff1f0; padding: 1px 3px; border-radius: 3px; }
+        .badge { background: var(--primary); color: white; padding: 2px 6px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .top-tag { color: #cf1322; font-weight: bold; background: #fff1f0; padding: 1px 4px; border-radius: 4px; font-size: 12px; border: 1px solid #ffa39e; }
+        
+        /* 行业明细容器 */
         .detail-row { display: none; background: #fafafa; }
-        .detail-box { padding: 10px 5px 15px 15px; border-left: 3px solid var(--primary); }
-        .detail-inner-table { width: 100%; font-size: 12px; background: white; border: 1px solid #eee; }
-        .btn-save { background: var(--success); color: white; border: none; padding: 12px; border-radius: 25px; cursor: pointer; font-weight: bold; width: 100%; margin: 15px 0; box-shadow: 0 4px 10px rgba(82,196,26,0.3); font-size: 15px; }
-        .compare-bar { background: #fffbe6; border: 1px solid #ffe58f; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+        .detail-box { padding: 5px 0 10px 2px; border-left: 4px solid var(--primary); background: #fff; margin: 5px 0 10px 5px; }
+        .detail-inner-table { width: 100%; table-layout: fixed; border: 1px solid #eee; }
+
+        /* --- 响应式字体核心代码 --- */
+        /* 默认手机端：12px */
+        .detail-inner-table { font-size: 12px; }
+        .detail-inner-table thead th { font-size: 12px; padding: 8px 4px; }
+        .detail-inner-table td { font-size: 12px; padding: 8px 3px; }
+
+        /* 电脑端（屏幕宽度大于 768px）：14px */
+        @media screen and (min-width: 768px) {
+            .detail-inner-table { font-size: 14px; }
+            .detail-inner-table thead th { font-size: 14px; padding: 10px 5px; }
+            .detail-inner-table td { font-size: 14px; padding: 10px 5px; }
+            .col-detail-name { width: 90px !important; } /* 电脑端给简称稍微多点空间 */
+        }
+        /* ----------------------- */
+
+        .detail-inner-table thead th { background: #fdfdfd; color: #777; font-weight: bold; border-bottom: 1px solid #eee; text-align: left; }
+        .detail-inner-table td { white-space: nowrap; overflow: hidden; color: var(--text-sub); border: 1px solid #f5f5f5; }
+        
+        .col-detail-rank { width: 45px; text-align: center; color: #888; }
+        .col-detail-name { width: 75px; color: #000; font-weight: 500; } 
+        .col-detail-full { font-weight: bold; color: #444; }
+        .col-detail-count { font-weight: bold; color: var(--primary); text-align: center; width: 45px; }
+
+        .btn-save { background: var(--success); color: white; border: none; padding: 14px; border-radius: 30px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(82,196,26,0.2); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="card">
-        <h2 style="text-align:center; margin: 5px 0 15px 0; font-size: 20px;">📊 调研数据工具</h2>
+        <h2 style="text-align:center; margin: 0 0 12px 0; font-size: 20px;">📊 行业统计助手</h2>
         <div class="drop-area" id="drop-zone">
-            <b>📁 点击选择或拖入文件</b>
-            <p style="font-size: 11px; color: #888; margin-top:5px;">已优化：优先显示个股名称</p>
+            <b>📁 点击或拖入文件</b>
         </div>
     </div>
 
-    <div class="history-header">
-        <span class="history-label">🕒 最近记录</span>
-        <span class="clear-link" onclick="clearAllData()">🗑️ 清空记录</span>
+    <div class="history-wrapper" id="history-wrapper" style="display:none;">
+        <div class="history-tabs" id="history-tabs"></div>
+        <button id="btn-clear-id" class="btn-clear">🗑 清除记录</button>
     </div>
-    <div class="history-tabs" id="history-tabs"></div>
 
     <div id="capture-area">
-        <div id="compare-info" class="compare-bar" style="display:none;"></div>
-        <div class="card" id="table-card" style="display:none;">
-            <h4 id="current-title" style="margin:0 0 12px 0; color:var(--primary); font-size: 14px;"></h4>
-            <div class="table-wrapper">
-                <table id="main-table">
-                    <thead>
-                        <tr>
-                            <th width="30"></th>
-                            <th width="35">排</th>
-                            <th>一级行业</th>
-                            <th width="60">个股</th>
-                            <th>人气王</th>
-                        </tr>
-                    </thead>
-                    <tbody id="main-body"></tbody>
-                </table>
+        <div class="card" id="table-card" style="display:none; padding: 15px 12px;">
+            <div style="display:flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+                <h4 id="current-title" style="margin:0; color:#666; font-size: 12px;"></h4>
+                <div id="compare-tag" style="font-size: 11px; color:var(--danger); font-weight:bold;"></div>
             </div>
+            <table id="main-table">
+                <thead>
+                    <tr>
+                        <th class="col-icon"></th><th class="col-rank">排</th><th class="col-industry-name">一级行业</th><th class="col-stock-count">个股</th><th class="col-top-stock">人气王</th>
+                    </tr>
+                </thead>
+                <tbody id="main-body"></tbody>
+            </table>
         </div>
     </div>
     
-    <button id="save-btn" class="btn-save" style="display:none" onclick="saveImg()">📸 生成分析长图</button>
+    <button id="save-btn" class="btn-save" style="display:none" onclick="saveImg()">📸 生成复盘分析长图</button>
 </div>
 
 <script>
 let historyData = JSON.parse(localStorage.getItem('trade_stats_history') || '[]');
 
-window.onload = () => {
-    refreshTabs();
+window.onload = () => { 
+    refreshTabs(); 
     if(historyData.length > 0) renderResult(0);
+    document.getElementById('btn-clear-id').addEventListener('click', () => {
+        historyData = []; 
+        localStorage.removeItem('trade_stats_history'); 
+        location.reload(); 
+    });
 };
 
 const dz = document.getElementById('drop-zone');
 const fileInput = document.createElement('input');
-fileInput.type = 'file';
-fileInput.accept = ".csv, .xlsx, .xls";
+fileInput.type = 'file'; fileInput.accept = ".csv, .xlsx, .xls";
 dz.onclick = () => fileInput.click();
 fileInput.onchange = e => handleFile(e.target.files[0]);
 
@@ -98,118 +128,91 @@ function handleFile(file) {
             const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
             const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
             processAndSave(file.name, data);
-        } catch(err) { alert("读取失败，请检查格式"); }
+        } catch(err) { alert("读取失败"); }
     };
     reader.readAsArrayBuffer(file);
 }
 
 function processAndSave(filename, data) {
-    if (!data || data.length === 0) return;
     const stats = {};
     const keys = Object.keys(data[0]);
-    
-    // 重点优化：匹配简称或名称，排除掉纯数字的代码列
     const colInd = keys.find(k => k.includes('行业'));
-    const colName = keys.find(k => k.includes('简称')) || keys.find(k => k.includes('名称')) || keys.find(k => k.includes('股票') && !k.includes('代码'));
+    const colName = keys.find(k => k.includes('简称')) || keys.find(k => k.includes('名称'));
     const colNum = keys.find(k => (k.includes('家数') || k.includes('调研数')) && !k.includes('排名'));
+    const colRank = keys.find(k => k.includes('排名') || k.includes('序'));
 
-    data.forEach(item => {
-        if (!item[colInd] && !item[colName]) return;
-        let l1 = (item[colInd] || "其他").toString().split('-')[0].trim();
-        let name = item[colName] || "未知";
+    data.forEach((item, index) => {
+        if (!item[colInd] || !item[colName]) return;
+        let l1 = item[colInd].toString().split('-')[0].trim();
+        let name = item[colName].toString().trim();
         let num = parseInt(item[colNum]) || 0;
+        let cleanRank = (item[colRank] || (index + 1)).toString().split('/')[0].trim(); 
+        if (name === "undefined" || l1 === "undefined") return;
 
-        if (num === 0 && (!item[colInd] || item[colInd] === "")) return;
         if(!stats[l1]) stats[l1] = { count: 0, top: name, max: num, stocks: [] };
         stats[l1].count++;
-        stats[l1].stocks.push({ name, full: (item[colInd] || "未知"), num });
+        stats[l1].stocks.push({ name, full: item[colInd], num, rank: cleanRank });
         if(num > stats[l1].max) { stats[l1].max = num; stats[l1].top = name; }
     });
 
-    const sortedData = Object.entries(stats).filter(([n, i]) => i.count > 0 && n !== "undefined").sort((a,b) => b[1].count - a[1].count);
-    const result = {
-        id: Date.now(),
-        time: new Date().toLocaleString('zh-CN', {hour12:false}).slice(5,-3).replace(/\//g,'-'),
-        filename: filename,
-        data: sortedData
-    };
-
-    historyData.unshift(result);
-    if(historyData.length > 5) historyData.pop();
+    const sortedData = Object.entries(stats).filter(e => e[1].count > 0).sort((a,b) => b[1].count - a[1].count);
+    const top5List = sortedData.slice(0, 5).map(item => item[0]);
+    historyData.unshift({ id: Date.now(), time: new Date().toLocaleString().slice(5, 16).replace(/\//g, '-'), filename, data: sortedData, top5: top5List });
+    if(historyData.length > 8) historyData.pop();
     localStorage.setItem('trade_stats_history', JSON.stringify(historyData));
     refreshTabs();
     renderResult(0);
 }
 
 function refreshTabs() {
+    const wrapper = document.getElementById('history-wrapper');
     const container = document.getElementById('history-tabs');
-    if(historyData.length === 0) {
-        container.innerHTML = '<span style="color:#bbb; font-size:12px; padding:10px;">暂无记录</span>';
-        return;
-    }
-    container.innerHTML = historyData.map((item, i) => `<div class="tab ${i===0?'active':''}" onclick="renderResult(${i}, this)">${item.time} | ${item.filename.substring(0,8)}</div>`).join('');
+    if(historyData.length === 0) { wrapper.style.display = 'none'; return; }
+    wrapper.style.display = 'flex';
+    container.innerHTML = historyData.map((item, i) => `<div class="tab ${i===0?'active':''}" onclick="renderResult(${i}, this)">${item.time}</div>`).join('');
 }
 
 function renderResult(index, tabEl) {
     const res = historyData[index];
-    const prev = historyData[index + 1];
     if(!res) return;
     if(tabEl) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tabEl.classList.add('active'); }
-
-    const currentTop5 = res.data.slice(0, 5).map(x => x[0]);
-    const prevTop5 = prev ? prev.data.slice(0, 5).map(x => x[0]) : [];
-    const newInTop5 = currentTop5.filter(x => !prevTop5.includes(x));
-
-    const infoBar = document.getElementById('compare-info');
-    if (prev && newInTop5.length > 0) {
-        infoBar.innerHTML = `🔥 <b>热度上升：</b>${newInTop5.join('、')} 挤进前五`;
-        infoBar.style.display = 'block';
-    } else { infoBar.style.display = 'none'; }
-
-    document.getElementById('current-title').innerText = "当前分析：" + res.filename;
+    const prevRes = historyData[index + 1];
+    const prevTop5 = prevRes ? prevRes.top5 : [];
+    document.getElementById('compare-tag').innerText = prevRes ? "🔥 对比热度开启" : "📊 记录模式";
+    document.getElementById('current-title').innerText = "源文件：" + res.filename;
     const tbody = document.getElementById('main-body');
     tbody.innerHTML = '';
-    
     res.data.forEach(([name, info], i) => {
-        const isNew = (i < 5 && newInTop5.includes(name));
+        const isNewInTop5 = (i < 5) && prevRes && !prevTop5.includes(name);
         const rowId = `detail-${index}-${i}`;
         const mainRow = document.createElement('tr');
         mainRow.onclick = () => { const d = document.getElementById(rowId); d.style.display = d.style.display === 'table-row' ? 'none' : 'table-row'; };
-        mainRow.innerHTML = `<td>▶</td><td>${i+1}</td><td style="font-weight:bold">${name}${isNew?'<span class="new-label">新晋</span>':''}</td><td><span class="badge">${info.count}股</span></td><td><span class="top-tag">${info.top}</span><br><small style="color:#999">${info.max}家</small></td>`;
+        mainRow.innerHTML = `
+            <td class="col-icon">▼</td>
+            <td class="col-rank">${i+1}</td>
+            <td class="col-industry-name">${name}${isNewInTop5?'<span class="hot-up">🔥热度上升</span>':''}</td>
+            <td class="col-stock-count"><span class="badge">${info.count}</span></td>
+            <td class="col-top-stock"><span class="top-tag">${info.top}</span><br><small style="color:#999;font-size:10px;">${info.max}家调研</small></td>
+        `;
         tbody.appendChild(mainRow);
         const detailRow = document.createElement('tr');
-        detailRow.id = rowId;
-        detailRow.className = 'detail-row';
-        detailRow.innerHTML = `<td colspan="5"><div class="detail-box"><table class="detail-inner-table"><thead><tr><th>股票简称</th><th>调研数</th></tr></thead><tbody>${info.stocks.sort((a,b)=>b.num-a.num).map(s=>`<tr><td><b>${s.name}</b><br><span style="color:#999;font-size:10px">${s.full}</span></td><td>${s.num}家</td></tr>`).join('')}</tbody></table></div></td>`;
+        detailRow.id = rowId; detailRow.className = 'detail-row';
+        detailRow.innerHTML = `<td colspan="5"><div class="detail-box"><table class="detail-inner-table"><thead><tr><th class="col-detail-rank">排名</th><th class="col-detail-name">个股简称</th><th>细分行业</th><th class="col-detail-count">家数</th></tr></thead><tbody>${info.stocks.sort((a,b)=>b.num-a.num).map(s=>`<tr><td class="col-detail-rank">${s.rank}</td><td class="col-detail-name">${s.name}</td><td class="col-detail-full">${s.full}</td><td class="col-detail-count">${s.num}</td></tr>`).join('')}</tbody></table></div></td>`;
         tbody.appendChild(detailRow);
     });
     document.getElementById('table-card').style.display = 'block';
     document.getElementById('save-btn').style.display = 'block';
 }
 
-function clearAllData() {
-    if(confirm("确定清空吗？")) {
-        localStorage.removeItem('trade_stats_history');
-        historyData = [];
-        document.getElementById('table-card').style.display = 'none';
-        document.getElementById('save-btn').style.display = 'none';
-        refreshTabs();
-    }
-}
-
 function saveImg() {
     const btn = document.getElementById('save-btn');
-    btn.innerText = "⚡ 正在生成图片...";
-    html2canvas(document.getElementById('capture-area'), { scale: 2, backgroundColor: "#f5f7fa", useCORS: true }).then(c => {
+    btn.innerText = "⚡ 生成中...";
+    html2canvas(document.getElementById('capture-area'), { scale: 2.5, backgroundColor: "#f0f2f5" }).then(c => {
         const a = document.createElement('a');
-        a.href = c.toDataURL('image/png');
-        a.download = `分析_${new Date().getTime()}.png`;
-        a.click();
-        btn.innerText = "📸 生成分析长图";
+        a.href = c.toDataURL('image/png'); a.download = `分析复盘_${Date.now()}.png`; a.click();
+        btn.innerText = "📸 生成复盘分析长图";
     });
 }
 </script>
 </body>
 </html>
-
-
